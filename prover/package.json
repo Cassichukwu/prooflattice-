@@ -1,0 +1,9 @@
+{
+  "name": "prooflattice-prover",
+  "version": "0.1.0",
+  "private": true,
+  "description": "zkML prover stub for ProofLattice. Replace with EZKL in production.",
+  "scripts": {
+    "prove": "python3 scripts/prove.py"
+  }
+}

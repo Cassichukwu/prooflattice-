@@ -1,0 +1,49 @@
+{
+  "name": "prooflattice-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Off-chain services for ProofLattice: attestor, trust engine, demosthenes bot, GraphQL API",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "seed": "tsx seed/seed.ts",
+    "attestor": "tsx src/attestor/index.ts",
+    "trust-engine": "tsx src/trust-engine/index.ts",
+    "demosthenes-bot": "tsx src/demosthenes-bot/index.ts",
+    "api": "tsx src/api/index.ts",
+    "api:mock": "tsx src/api/mock-schema.ts"
+  },
+  "dependencies": {
+    "@apollo/server": "^4.11.0",
+    "@graphql-tools/schema": "^10.0.4",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "graphql": "^16.9.0",
+    "graphql-tag": "^2.12.6",
+    "node-cache": "^5.1.2",
+    "pino": "^9.4.0",
+    "pino-pretty": "^11.2.2",
+    "uuid": "^10.0.0",
+    "viem": "^2.21.19",
+    "ws": "^8.18.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.5.5",
+    "@types/uuid": "^10.0.0",
+    "@types/ws": "^8.5.12",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2",
+    "vitest": "^2.1.1"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  }
+}

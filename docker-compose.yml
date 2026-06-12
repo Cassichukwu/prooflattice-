@@ -1,0 +1,131 @@
+version: "3.9"
+
+# Anvil (local Mantle L2 fork) + ProofLattice backend + frontend
+# Run: docker compose up
+
+services:
+  anvil:
+    image: ghcr.io/foundry-rs/foundry:nightly
+    container_name: prooflattice-anvil
+    command: >
+      anvil
+        --host 0.0.0.0
+        --port 8545
+        --chain-id 5003
+        --block-time 2
+        --accounts 20
+        --balance 10000
+    ports:
+      - "8545:8545"
+    healthcheck:
+      test: ["CMD", "cast", "block-number", "--rpc-url", "http://127.0.0.1:8545"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  deployer:
+    image: ghcr.io/foundry-rs/foundry:nightly
+    container_name: prooflattice-deployer
+    depends_on:
+      anvil:
+        condition: service_healthy
+    working_dir: /app
+    volumes:
+      - ./contracts:/app
+      - ./deploy:/app/deploy
+    environment:
+      - PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+      - USE_MOCK_IDENTITY=true
+      - TRUST_ORACLE=0xf39Fd6e51aad88F6F4ce6aB8827279cfFFb92266
+      - FEE_RECIPIENT=0xf39Fd6e51aad88F6F4ce6aB8827279cfFFb92266
+      - DEPLOY_OUT=/app/deploy
+    command: >
+      bash -c "
+        forge install foundry-rs/forge-std --no-commit &&
+        forge install OpenZeppelin/openzeppelin-contracts --no-commit &&
+        forge script script/Deploy.s.sol:Deploy
+          --rpc-url http://anvil:8545
+          --broadcast
+          --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+      "
+
+  seeder:
+    image: node:20-alpine
+    container_name: prooflattice-seeder
+    depends_on:
+      - deployer
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+      - ./deploy:/app/deploy
+      - ./data:/app/data
+    environment:
+      - MANTLE_RPC_URL=http://anvil:8545
+      - ORACLE_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+      - PROOF_LATTICE_REGISTRY=${PROOF_LATTICE_REGISTRY:-0x0}
+      - DEMOSTHENES_ARENA=${DEMOSTHENES_ARENA:-0x0}
+      - X_BOUNTY_BOARD=${X_BOUNTY_BOARD:-0x0}
+      - TEE_VERIFIER=${TEE_VERIFIER:-0x0}
+      - ZKML_VERIFIER=${ZKML_VERIFIER:-0x0}
+      - IDENTITY_REGISTRY=${IDENTITY_REGISTRY:-0x0}
+    command: >
+      sh -c "
+        apk add --no-cache python3 make g++ git &&
+        npm install --silent &&
+        npm run seed
+      "
+
+  backend:
+    image: node:20-alpine
+    container_name: prooflattice-backend
+    depends_on:
+      - anvil
+      - deployer
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+      - ./deploy:/app/deploy
+    environment:
+      - MANTLE_RPC_URL=http://anvil:8545
+      - ORACLE_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+      - PROOF_LATTICE_REGISTRY=${PROOF_LATTICE_REGISTRY:-0x0}
+      - DEMOSTHENES_ARENA=${DEMOSTHENES_ARENA:-0x0}
+      - X_BOUNTY_BOARD=${X_BOUNTY_BOARD:-0x0}
+      - TEE_VERIFIER=${TEE_VERIFIER:-0x0}
+      - ZKML_VERIFIER=${ZKML_VERIFIER:-0x0}
+      - IDENTITY_REGISTRY=${IDENTITY_REGISTRY:-0x0}
+      - API_PORT=4000
+      - TEE_SERVICE_PORT=4001
+      - LOG_LEVEL=info
+    ports:
+      - "4000:4000"
+      - "4001:4001"
+    command: >
+      sh -c "
+        apk add --no-cache python3 make g++ &&
+        npm install --silent &&
+        npm run start
+      "
+
+  frontend:
+    image: node:20-alpine
+    container_name: prooflattice-frontend
+    depends_on:
+      - backend
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:4000/graphql
+      - NEXT_PUBLIC_CHAIN_ID=5003
+      - NEXT_PUBLIC_CHAIN_NAME=Mantle Local
+      - NEXT_PUBLIC_REGISTRY_ADDRESS=${PROOF_LATTICE_REGISTRY:-0x0}
+      - NEXT_PUBLIC_ARENA_ADDRESS=${DEMOSTHENES_ARENA:-0x0}
+      - NEXT_PUBLIC_BOUNTY_ADDRESS=${X_BOUNTY_BOARD:-0x0}
+    ports:
+      - "3000:3000"
+    command: >
+      sh -c "
+        npm install --silent &&
+        npm run dev
+      "

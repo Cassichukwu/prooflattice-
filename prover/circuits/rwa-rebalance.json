@@ -1,0 +1,25 @@
+{
+  "name": "rwa-rebalance",
+  "version": "0.1.0",
+  "description": "Proves that an LLM decided to rebalance mETH/USDY based on yield differential.",
+  "model_type": "neural_network",
+  "framework": "ezkl",
+  "input_schema": {
+    "meth_apy_bps": "uint",
+    "usdy_apy_bps": "uint",
+    "gas_cost_usd": "uint",
+    "agent_id": "uint"
+  },
+  "output_schema": {
+    "action": "uint",
+    "expected_gain_bps": "uint"
+  },
+  "output_schema_notes": {
+    "action": "0=hold, 1=swap_meth_to_usdy, 2=swap_usdy_to_meth",
+    "expected_gain_bps": "uint"
+  },
+  "constraints": {
+    "action_must_be_in_set": [0, 1, 2],
+    "expected_gain_bps_must_be_positive_if_action_nonzero": true
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "swap-decision",
+  "version": "0.1.0",
+  "description": "Proves that an LLM produced a specific DeFi swap decision from given market state.",
+  "model_type": "neural_network",
+  "framework": "ezkl",
+  "input_schema": {
+    "amount": "uint",
+    "slippage_bps": "uint",
+    "expected_output_usd": "uint",
+    "agent_id": "uint"
+  },
+  "output_schema": {
+    "decision": "uint",
+    "confidence": "uint"
+  },
+  "output_schema_notes": {
+    "decision": "0=hold, 1=buy, 2=sell",
+    "confidence": "0-100"
+  },
+  "constraints": {
+    "decision_must_be_in_set": [0, 1, 2],
+    "confidence_between_0_and_100": true
+  },
+  "expected_runtime_ms": 1200,
+  "expected_proof_size_bytes": 768
+}
