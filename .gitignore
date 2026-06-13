@@ -5,7 +5,7 @@ node_modules/
 
 # Testing
 coverage/
-lib/
+lib/  # Foundry libraries (only ignore at root)
 out/
 cache/
 broadcast/
@@ -40,3 +40,4 @@ broadcast/
 
 # Local files
 deploy/deployment.json
+lib/  # ← don't ignore this for backend
