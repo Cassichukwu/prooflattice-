@@ -43,8 +43,8 @@ export default function DashboardPage() {
   const [agentId, setAgentId] = useState<string>("");
 
   const registryAddress = (process.env.NEXT_PUBLIC_REGISTRY_ADDRESS as `0x${string}`) || "0x0";
-  const teeAddress = (process.env.NEXT_PUBLIC_TEE_VERIFIER as `0x${string}`) || "0x0";
-  const zkmlAddress = (process.env.NEXT_PUBLIC_ZKML_VERIFIER as `0x${string}`) || "0x0";
+  const teeAddress = (process.env.NEXT_PUBLIC_TEE_VERIFIER_ADDRESS as `0x${string}`) || "0x0";
+  const zkmlAddress = (process.env.NEXT_PUBLIC_ZKML_VERIFIER_ADDRESS as `0x${string}`) || "0x0";
 
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
