@@ -1,6 +1,5 @@
 "use client";
 import { useQuery, gql } from "@apollo/client";
-import { use } from "react";
 import Link from "next/link";
 
 const AGENT = gql`
@@ -34,8 +33,8 @@ const ROUNDS = gql`
   }
 `;
 
-export default function AgentPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function AgentPage({ params }: { params: { id: string } }) {
+  const id = params.id;
   const { data, loading } = useQuery(AGENT, { variables: { id } });
   const { data: roundsData } = useQuery(ROUNDS, { pollInterval: 10000 });
 
