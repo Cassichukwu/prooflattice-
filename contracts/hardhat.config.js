@@ -16,12 +16,13 @@ const MANTLE_SEPOLIA_RPC = process.env.MANTLE_SEPOLIA_RPC_URL || "https://rpc.se
 
 module.exports = {
   solidity: {
-    version: "0.8.24",
+    version: "0.8.28",
     settings: {
       optimizer: {
         enabled: true,
         runs: 200,
       },
+      evmVersion: "cancun",
       viaIR: true,
     },
   },
