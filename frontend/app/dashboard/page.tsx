@@ -53,7 +53,11 @@ export default function DashboardPage() {
     const mrEnclave = keccak256(toHex(agentName + "-enclave"));
     const mrSigner = keccak256(toHex(agentName + "-signer"));
     const circuitHash = useZkml ? keccak256(toHex(agentName + "-circuit")) : "0x0000000000000000000000000000000000000000000000000000000000000000";
-    const teeQuote = ("0x" + "00".repeat(72)) as `0x${string}`;
+    // Mock TEE verifier expects 96 bytes: [mr_enclave 32][mr_signer 32][issuedAt 32]
+    // issuedAt must be > block.timestamp - 1 day; use current unix time
+    const now = Math.floor(Date.now() / 1000);
+    const issuedAtHex = BigInt(now).toString(16).padStart(64, "0");
+    const teeQuote = ("0x" + mrEnclave.slice(2) + mrSigner.slice(2) + issuedAtHex) as `0x${string}`;
     writeContract({
       address: registryAddress,
       abi: REGISTRY_ABI,
