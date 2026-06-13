@@ -25,6 +25,12 @@ module.exports = {
       viaIR: true,
     },
   },
+  paths: {
+    sources: "./src",
+    tests: "./test",
+    cache: "./cache",
+    artifacts: "./artifacts",
+  },
   networks: {
     // Localhost (Anvil) — for testing
     localhost: {
