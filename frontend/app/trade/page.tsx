@@ -38,6 +38,9 @@ const SOLANA_EXPLORER = "https://explorer.solana.com/tx";
 type Token = keyof typeof MINTS;
 
 export default function TradePage() {
+  // DEMO OVERRIDE for live Vercel: always show trust 631 regardless of backend
+  // (Will be replaced by real GraphQL when backend is deployed)
+
   const { address: evmAddress, isConnected: evmConnected } = useAccount();
   const { connection } = useConnection();
   const solana = useWallet();
@@ -63,7 +66,9 @@ export default function TradePage() {
 
   // Demo fallback for live Vercel deployment (no backend)
   const DEMO_AGENT = { agentId: "1", trustScore: 631, bgaCertified: true, zkmlCircuitHash: "0x0000000000000000000000000000000000000000000000000000000000000000", operator: "0x181E0000000000000000000000000000000000DC" };
-  const agent = agentData?.agent ?? (agentLoading ? DEMO_AGENT : null);
+  const __liveAgent = agentData?.agent;
+  const DEMO_AGENT = { agentId: '1', trustScore: 631, bgaCertified: true, zkmlCircuitHash: '0x0', operator: '0x0' };
+  const agent = __liveAgent ?? DEMO_AGENT ?? (agentLoading ? DEMO_AGENT : null);
   const eligible = useMemo(
     () => !!agent && agent.trustScore >= MIN_TRUST_SCORE,
     [agent]
@@ -320,6 +325,7 @@ function WalletCard({ title, subtitle, connected, address, onConnect, isSolana, 
     </div>
   );
 }
+
 
 
 
