@@ -1,0 +1,134 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "MockTEEVerifier",
+  "sourceName": "src/MockTEEVerifier.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "mrEnclave",
+          "type": "bytes32"
+        }
+      ],
+      "name": "MrEnclaveApproved",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "mrEnclave",
+          "type": "bytes32"
+        }
+      ],
+      "name": "MrEnclaveRevoked",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "mr",
+          "type": "bytes32"
+        }
+      ],
+      "name": "approveMrEnclave",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "mr",
+          "type": "bytes32"
+        }
+      ],
+      "name": "revokeMrEnclave",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "revokedMrEnclaves",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "quote",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "expectedMrEnclave",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "expectedMrSigner",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint64",
+          "name": "minIssuedAt",
+          "type": "uint64"
+        }
+      ],
+      "name": "verifyQuote",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "valid",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x60808060405234602757600180546001600160a01b031916331790556102ff908161002c8239f35b5f80fdfe6080806040526004361015610012575f80fd5b5f3560e01c9081638da5cb5b146101d957508063ae8a78a6146101ab578063ba2867d714610141578063c07bc498146100da5763faf243ac14610053575f80fd5b346100d65760803660031901126100d65760043567ffffffffffffffff81116100d657366023820112156100d65780600401359067ffffffffffffffff82116100d65736602483830101116100d65760643567ffffffffffffffff811681036100d6576020926100cc9260443591602480359201610234565b6040519015158152f35b5f80fd5b346100d65760203660031901126100d6577ff8f0fa7b164a0e88b0d9ce55fa63d4af0a8755683da55167b85d7d88316891d3602060043561012660018060a01b036001541633146101fc565b805f525f825260405f2060ff198154169055604051908152a1005b346100d65760203660031901126100d6577f3c0015566335c0372b3fbb16742a6a311d32703117d70d50bf0c3ec59337f7be602060043561018d60018060a01b036001541633146101fc565b805f525f825260405f20600160ff19825416179055604051908152a1005b346100d65760203660031901126100d6576004355f525f602052602060ff60405f2054166040519015158152f35b346100d6575f3660031901126100d6576001546001600160a01b03168152602090f35b1561020357565b60405162461bcd60e51b81526020600482015260096024820152682737ba1037bbb732b960b91b6044820152606490fd5b929390606081036102c057825f525f60205260ff60405f2054166102c057806020116100d6576020840191843592826040116100d65760408601926020828503126100d657903595602091810103603f1901126100d65767ffffffffffffffff809116913516106102b857036102b257036102ae57600190565b5f90565b50505f90565b505050505f90565b50505050505f9056fea2646970667358221220edcbababa6922026942aa19ade0055561d0b882fdf1c0537262a78c2e9fa28f564736f6c634300081c0033",
+  "deployedBytecode": "0x6080806040526004361015610012575f80fd5b5f3560e01c9081638da5cb5b146101d957508063ae8a78a6146101ab578063ba2867d714610141578063c07bc498146100da5763faf243ac14610053575f80fd5b346100d65760803660031901126100d65760043567ffffffffffffffff81116100d657366023820112156100d65780600401359067ffffffffffffffff82116100d65736602483830101116100d65760643567ffffffffffffffff811681036100d6576020926100cc9260443591602480359201610234565b6040519015158152f35b5f80fd5b346100d65760203660031901126100d6577ff8f0fa7b164a0e88b0d9ce55fa63d4af0a8755683da55167b85d7d88316891d3602060043561012660018060a01b036001541633146101fc565b805f525f825260405f2060ff198154169055604051908152a1005b346100d65760203660031901126100d6577f3c0015566335c0372b3fbb16742a6a311d32703117d70d50bf0c3ec59337f7be602060043561018d60018060a01b036001541633146101fc565b805f525f825260405f20600160ff19825416179055604051908152a1005b346100d65760203660031901126100d6576004355f525f602052602060ff60405f2054166040519015158152f35b346100d6575f3660031901126100d6576001546001600160a01b03168152602090f35b1561020357565b60405162461bcd60e51b81526020600482015260096024820152682737ba1037bbb732b960b91b6044820152606490fd5b929390606081036102c057825f525f60205260ff60405f2054166102c057806020116100d6576020840191843592826040116100d65760408601926020828503126100d657903595602091810103603f1901126100d65767ffffffffffffffff809116913516106102b857036102b257036102ae57600190565b5f90565b50505f90565b505050505f90565b50505050505f9056fea2646970667358221220edcbababa6922026942aa19ade0055561d0b882fdf1c0537262a78c2e9fa28f564736f6c634300081c0033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

@@ -1,0 +1,45 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "ITEEVerifier",
+  "sourceName": "src/interfaces/ITEEVerifier.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "quote",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "expectedMrEnclave",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "expectedMrSigner",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint64",
+          "name": "minIssuedAt",
+          "type": "uint64"
+        }
+      ],
+      "name": "verifyQuote",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "valid",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

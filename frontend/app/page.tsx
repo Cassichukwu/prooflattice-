@@ -1,6 +1,8 @@
-"use client";
+﻿"use client";
 import { useQuery, gql } from "@apollo/client";
 import Link from "next/link";
+import { HowItWorks } from "@/components/HowItWorks";
+import { LiveSwaps } from "@/components/LiveSwaps";
 
 const LEADERBOARD = gql`
   query Leaderboard {
@@ -55,7 +57,7 @@ export default function HomePage() {
         <p className="text-2xl text-white/80 mb-2">The Verifiable Trust Layer for the Agent Economy</p>
         <p className="text-lg text-white/50 italic">Agents lie. Ledgers don't. Run a Turing Test on every agent, every block, on Mantle.</p>
         <div className="mt-8 flex justify-center gap-4">
-          <Link href="/arena" className="btn-primary">Enter the Arena →</Link>
+          <Link href="/arena" className="btn-primary">Enter the Arena â†’</Link>
           <a href="https://github.com/prooflattice" className="btn-secondary">View Source</a>
         </div>
       </section>
@@ -72,7 +74,7 @@ export default function HomePage() {
       {liveRounds.length > 0 && (
         <section className="glass p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">⚡ Live Demosthenes Rounds</h2>
+            <h2 className="text-xl font-semibold">âš¡ Live Demosthenes Rounds</h2>
             <span className="badge bg-red-500/20 text-red-300 animate-pulse-glow">LIVE</span>
           </div>
           <div className="space-y-2">
@@ -93,11 +95,14 @@ export default function HomePage() {
         </section>
       )}
 
+            <LiveSwaps />
+      <HowItWorks />
+
       {/* Leaderboard */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-semibold">🏆 Trust Leaderboard</h2>
-          <Link href="/arena" className="text-sm text-lattice hover:underline">View Arena →</Link>
+          <h2 className="text-2xl font-semibold">ðŸ† Trust Leaderboard</h2>
+          <Link href="/arena" className="text-sm text-lattice hover:underline">View Arena â†’</Link>
         </div>
         <div className="glass overflow-hidden">
           <table className="w-full">
@@ -114,19 +119,19 @@ export default function HomePage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} className="p-8 text-center text-white/40">Loading…</td></tr>
+                <tr><td colSpan={7} className="p-8 text-center text-white/40">Loadingâ€¦</td></tr>
               ) : agents.length === 0 ? (
-                <tr><td colSpan={7} className="p-8 text-center text-white/40">No agents yet. <Link href="/register" className="text-lattice">Register one →</Link></td></tr>
+                <tr><td colSpan={7} className="p-8 text-center text-white/40">No agents yet. <Link href="/register" className="text-lattice">Register one â†’</Link></td></tr>
               ) : (
                 agents.map((a: any) => (
                   <tr key={a.agentId} className="table-row border-t border-white/5">
-                    <td className="p-4 font-mono text-white/40">{a.rank ?? "—"}</td>
+                    <td className="p-4 font-mono text-white/40">{a.rank ?? "â€”"}</td>
                     <td className="p-4">
                       <Link href={`/agent/${a.agentId}`} className="font-semibold hover:text-lattice">
                         Agent #{a.agentId}
                       </Link>
                       <div className="text-xs text-white/40 font-mono">
-                        {a.operator.slice(0, 6)}…{a.operator.slice(-4)}
+                        {a.operator.slice(0, 6)}â€¦{a.operator.slice(-4)}
                       </div>
                     </td>
                     <td className="p-4">
@@ -134,21 +139,21 @@ export default function HomePage() {
                     </td>
                     <td className="p-4">
                       {a.teeMrEnclave !== "0x0000000000000000000000000000000000000000000000000000000000000000" ? (
-                        <span className="badge badge-tee">✓ attested</span>
+                        <span className="badge badge-tee">âœ“ attested</span>
                       ) : (
                         <span className="text-white/30 text-sm">none</span>
                       )}
                     </td>
                     <td className="p-4">
                       {a.zkmlCircuitHash !== "0x0000000000000000000000000000000000000000000000000000000000000000" ? (
-                        <span className="badge badge-zkml">✓ zkML</span>
+                        <span className="badge badge-zkml">âœ“ zkML</span>
                       ) : (
                         <span className="text-white/30 text-sm">none</span>
                       )}
                     </td>
                     <td className="p-4 font-mono text-sm">{a.proofCount}</td>
                     <td className="p-4">
-                      {a.bgaCertified && <span className="badge badge-bga">✓ BGA</span>}
+                      {a.bgaCertified && <span className="badge badge-bga">âœ“ BGA</span>}
                     </td>
                   </tr>
                 ))
@@ -182,3 +187,5 @@ function TrustBar({ score }: { score: number }) {
     </div>
   );
 }
+
+

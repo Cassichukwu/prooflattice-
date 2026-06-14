@@ -1,0 +1,15 @@
+{
+  "network": "mantleSepolia",
+  "chainId": "5003",
+  "deployer": "0x181EDDCFb96f8a7EF6d08656300bcb6d7425E0DC",
+  "timestamp": "2026-06-13T02:39:15.079Z",
+  "contracts": {
+    "ProofLatticeRegistry": "0xb2Bd745C436D96b54B4311773AF0a65A5aa694fc",
+    "DemosthenesArena": "0x15FeE1802cE22D4d596C025Ace5af7C53e939B56",
+    "XBountyBoard": "0xAe32096782e0f50b43d600299842D57DE3F5a3B8",
+    "TEEVerifier": "0x3C0D68fe6025F94e78C269fe838F02ebC1A244cd",
+    "ZkMLVerifier": "0x8c8869B98185bC7cf8134615A8a15E50174ca2Cb",
+    "IdentityRegistry": "0xbDc1611aeF5b9c3443dDF0A5D16076398D0fdB65"
+  },
+  "explorer": "https://sepolia.mantlescan.xyz"
+}
