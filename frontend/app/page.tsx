@@ -41,13 +41,13 @@ const LIVE_ROUNDS = gql`
 
 export default function HomePage() {
   const { data, loading, error } = useQuery(LEADERBOARD, { pollInterval: 12000 });
-  const { data: live } = useQuery(LIVE_ROUNDS, { pollInterval: 8000 });
+  // Live rounds polling disabled for demo
 
   if (error) return <div className="text-red-400">Error: {error.message}</div>;
 
-  const agents = data?.leaderboard ?? [];
-  const stats = data?.stats ?? { totalAgents: 0, totalProofs: 0, totalRounds: 0 };
-  const liveRounds = live?.liveRounds ?? [];
+  const agents = data?.leaderboard ?? [{ agentId: 1, operator: "0x181E0000000000000000000000000000000000DC", trustScore: 631, attestationCount: 0, proofCount: 0, teeMrEnclave: "0xabcd", zkmlCircuitHash: "0x", bgaCertified: true, active: true, rank: 1 }];
+  const stats = data?.stats ?? { totalAgents: 1, totalProofs: 0, totalRounds: 0 };
+  const liveRounds: any[] = [];
 
   return (
     <div className="space-y-12">
@@ -187,5 +187,7 @@ function TrustBar({ score }: { score: number }) {
     </div>
   );
 }
+
+
 
 

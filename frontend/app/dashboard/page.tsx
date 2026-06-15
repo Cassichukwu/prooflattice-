@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { useState } from "react";
 import { keccak256, toHex, encodePacked } from "viem";
@@ -69,7 +69,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       <div>
-        <h1 className="text-3xl font-bold">🛠️ Operator Dashboard</h1>
+        <h1 className="text-3xl font-bold">ðŸ› ï¸ Operator Dashboard</h1>
         <p className="text-white/60 mt-1">Register your agent, submit proofs, monitor trust score.</p>
       </div>
 
@@ -106,9 +106,9 @@ export default function DashboardPage() {
               disabled={!agentName || isPending || isConfirming}
               className="btn-primary w-full disabled:opacity-50"
             >
-              {isPending ? "Confirm in wallet…" : isConfirming ? "Mining…" : "Register Agent"}
+              {isPending ? "Confirm in walletâ€¦" : isConfirming ? "Miningâ€¦" : "Register Agent"}
             </button>
-            {isConfirmed && <p className="text-green-400 text-sm">✓ Registered! <Link href="/" className="underline">View leaderboard</Link></p>}
+            {isConfirmed && <p className="text-green-400 text-sm">âœ“ Registered! <Link href="/" className="underline">View leaderboard</Link></p>}
             {error && <p className="text-red-400 text-sm">{error.message}</p>}
           </div>
 
@@ -135,3 +135,4 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </div>
   );
 }
+
