@@ -10,7 +10,7 @@ import { gql } from "graphql-tag";
 import { readFileSync } from "fs";
 import { join } from "path";
 
-const DATA_DIR = process.env.MOCK_DATA_DIR || join(process.cwd(), "..", "data");
+const DATA_DIR = process.env.MOCK_DATA_DIR || join(process.cwd(), "data");
 
 function loadJson<T = any>(file: string): T {
   return JSON.parse(readFileSync(join(DATA_DIR, file), "utf-8")) as T;
