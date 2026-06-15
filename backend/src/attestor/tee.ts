@@ -16,7 +16,7 @@
  */
 import "dotenv/config";
 import express from "express";
-import { keccak256, encodePacked, type Hex } from "viem";
+import { keccak256, encodePacked, toHex, type Hex } from "viem";
 import { log } from "../lib/logger.js";
 import { publicClient, oracleClient, oracleAccount, getAddress } from "../lib/chain.js";
 import { ProofLatticeRegistryAbi, TEEVerifierAbi } from "../lib/abi.js";
