@@ -5,7 +5,7 @@
   "description": "Off-chain services for ProofLattice: attestor, trust engine, demosthenes bot, GraphQL API",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "start": "tsx src/api/mock-schema.ts",
+    "start": "tsx src/api/onchain-schema.ts",
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
