@@ -114,14 +114,21 @@ async function fetchAllAgents() {
     const agentCount = Number(total);
     console.log(`[*] Fetching ${agentCount} agents from chain...`);
 
-    // Get operator addresses from AgentRegistered events
-    const operatorMap = new Map<string, string>();
+    // Get operator addresses from AgentRegistered events in chunks
+const operatorMap = new Map<string, string>();
+try {
+  const latestBlock = await client.getBlockNumber();
+  const chunkSize = 9000n;
+  let fromBlock = 0n;
+  
+  while (fromBlock <= latestBlock) {
+    const toBlock = fromBlock + chunkSize > latestBlock ? latestBlock : fromBlock + chunkSize;
     try {
       const logs = await client.getLogs({
         address: REGISTRY_ADDRESS,
         event: AGENT_REGISTERED_EVENT,
-        fromBlock: 0n,
-        toBlock: "latest",
+        fromBlock,
+        toBlock,
       });
       for (const log of logs) {
         const args = log.args as any;
@@ -129,10 +136,15 @@ async function fetchAllAgents() {
           operatorMap.set(String(args.agentId), args.operator);
         }
       }
-      console.log(`[*] Found ${operatorMap.size} operator addresses from events`);
     } catch (e) {
-      console.error("[warn] Failed to fetch AgentRegistered events:", e);
+      console.error(`[warn] Failed chunk ${fromBlock}-${toBlock}:`, e);
     }
+    fromBlock = toBlock + 1n;
+  }
+  console.log(`[*] Found ${operatorMap.size} operator addresses from events`);
+} catch (e) {
+  console.error("[warn] Failed to fetch AgentRegistered events:", e);
+}
 
     const agents = [];
 
