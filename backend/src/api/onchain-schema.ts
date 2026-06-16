@@ -107,7 +107,7 @@ async function fetchAllAgents() {
     const nextId = await client.readContract({
       address: REGISTRY_ADDRESS,
       abi: REGISTRY_ABI,
-      functionName: "nextAgentId",
+      functionName: "totalAgents",
     });
 
     const agentCount = Number(nextId);
@@ -135,11 +135,10 @@ async function fetchAllAgents() {
     lastAttested: String(data.lastAttested),
     teeMrEnclave: data.teeMrEnclave,
     teeMrSigner: data.teeMrSigner,
-    zkmlCircuitHash: data.zkmlCircuitHash,
-});
-          });
-        }
-      } catch {
+    zkmlCircuitHash: data.zkmlCi
+      });
+      }
+    } catch {
         continue;
       }
     }
