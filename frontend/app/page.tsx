@@ -19,10 +19,10 @@ const LEADERBOARD = gql`
       rank
     }
     stats {
-      totalAgents
-      totalProofs
-      totalRounds
-    }
+  totalAgents
+  totalProofs
+  activeRounds
+}
   }
 `;
 
