@@ -119,7 +119,7 @@ const operatorMap = new Map<string, string>();
 try {
   const latestBlock = await client.getBlockNumber();
   const chunkSize = 9000n;
-  let fromBlock = 0n;
+  let fromBlock = 39886832n;
   
   while (fromBlock <= latestBlock) {
     const toBlock = fromBlock + chunkSize > latestBlock ? latestBlock : fromBlock + chunkSize;
