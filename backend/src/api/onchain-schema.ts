@@ -1,13 +1,9 @@
-/**
- * Onchain GraphQL server: reads real agent data from ProofLatticeRegistry
- * on Mantle Sepolia testnet.
- */
 import express from "express";
 import cors from "cors";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import { gql } from "graphql-tag";
-import { createPublicClient, http, parseAbiItem } from "viem";
+import { createPublicClient, http } from "viem";
 import { defineChain } from "viem";
 
 const mantleSepolia = defineChain({
@@ -23,7 +19,7 @@ const mantleSepolia = defineChain({
   testnet: true,
 });
 
-const REGISTRY_ADDRESS = (process.env.NEXT_PUBLIC_REGISTRY_ADDRESS || "0xb2Bd745C436D96b54B4311773AF0a65A5aa694fc") as `0x${string}`;
+const REGISTRY_ADDRESS = (process.env.REGISTRY_ADDRESS || "0xb2Bd745C436D96b54B4311773AF0a65A5aa694fc") as `0x${string}`;
 
 const REGISTRY_ABI = [
   {
@@ -56,11 +52,14 @@ const REGISTRY_ABI = [
     outputs: [{ type: "uint256" }],
   },
   {
-    name: "agentIdByOperator",
-    type: "function",
-    stateMutability: "view",
-    inputs: [{ name: "operator", type: "address" }],
-    outputs: [{ type: "uint256" }],
+    name: "AgentRegistered",
+    type: "event",
+    inputs: [
+      { name: "agentId", type: "uint256", indexed: true },
+      { name: "operator", type: "address", indexed: true },
+      { name: "agentURI", type: "string", indexed: false },
+      { name: "blockNumber", type: "uint256", indexed: false },
+    ],
   },
 ] as const;
 
@@ -86,7 +85,7 @@ const typeDefs = gql`
     zkmlCircuitHash: String
     proofCount: Int!
     rank: Int
-}
+  }
 
   type Stats {
     totalAgents: Int!
@@ -104,16 +103,47 @@ const typeDefs = gql`
 
 async function fetchAllAgents() {
   try {
-    const nextId = await client.readContract({
+    const total = await client.readContract({
       address: REGISTRY_ADDRESS,
       abi: REGISTRY_ABI,
       functionName: "totalAgents",
     });
 
-    const agentCount = Number(nextId);
+    const agentCount = Number(total);
+    console.log(`[*] Fetching ${agentCount} agents from chain...`);
+
+    // Get operator addresses from AgentRegistered events
+    const operatorMap = new Map<string, string>();
+    try {
+      const logs = await client.getLogs({
+        address: REGISTRY_ADDRESS,
+        event: {
+          name: "AgentRegistered",
+          type: "event",
+          inputs: [
+            { name: "agentId", type: "uint256", indexed: true },
+            { name: "operator", type: "address", indexed: true },
+            { name: "agentURI", type: "string", indexed: false },
+            { name: "blockNumber", type: "uint256", indexed: false },
+          ],
+        },
+        fromBlock: 0n,
+        toBlock: "latest",
+      });
+      for (const log of logs) {
+        const args = log.args as any;
+        if (args.agentId && args.operator) {
+          operatorMap.set(String(args.agentId), args.operator);
+        }
+      }
+      console.log(`[*] Found ${operatorMap.size} operator addresses from events`);
+    } catch (e) {
+      console.error("[warn] Failed to fetch AgentRegistered events:", e);
+    }
+
     const agents = [];
 
-    for (let i = 1; i < agentCount; i++) {
+    for (let i = 1; i <= agentCount; i++) {
       try {
         const data = await client.readContract({
           address: REGISTRY_ADDRESS,
@@ -124,21 +154,22 @@ async function fetchAllAgents() {
 
         if (data && data.active) {
           agents.push({
-    agentId: String(i),
-    operator: data.teeVerifier,
-    trustScore: Number(data.trustScore),
-    attestationCount: Number(data.attestationCount),
-    proofCount: 0,
-    bgaCertified: data.bgaCertified,
-    active: data.active,
-    firstSeen: String(data.firstSeen),
-    lastAttested: String(data.lastAttested),
-    teeMrEnclave: data.teeMrEnclave,
-    teeMrSigner: data.teeMrSigner,
-    zkmlCircuitHash: data.zkmlCi
-      });
-      }
-    } catch {
+            agentId: String(i),
+            operator: operatorMap.get(String(i)) || data.teeVerifier,
+            trustScore: Number(data.trustScore),
+            attestationCount: Number(data.attestationCount),
+            proofCount: 0,
+            bgaCertified: data.bgaCertified,
+            active: data.active,
+            firstSeen: String(data.firstSeen),
+            lastAttested: String(data.lastAttested),
+            teeMrEnclave: data.teeMrEnclave,
+            teeMrSigner: data.teeMrSigner,
+            zkmlCircuitHash: data.zkmlCircuitHash,
+          });
+        }
+      } catch (e) {
+        console.error(`[warn] Failed to fetch agent ${i}:`, e);
         continue;
       }
     }
