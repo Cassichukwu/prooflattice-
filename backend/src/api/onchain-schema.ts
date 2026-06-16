@@ -34,26 +34,32 @@ const REGISTRY_ABI = [
     outputs: [{
       type: "tuple",
       components: [
-        { name: "operator", type: "address" },
-        { name: "agentURI", type: "string" },
-        { name: "trustScore", type: "uint16" },
-        { name: "attestationCount", type: "uint32" },
-        { name: "proofCount", type: "uint32" },
-        { name: "bgaCertified", type: "bool" },
-        { name: "active", type: "bool" },
-        { name: "firstSeen", type: "uint256" },
-        { name: "lastAttested", type: "uint256" },
         { name: "teeMrEnclave", type: "bytes32" },
         { name: "teeMrSigner", type: "bytes32" },
         { name: "zkmlCircuitHash", type: "bytes32" },
+        { name: "teeVerifier", type: "address" },
+        { name: "zkmlVerifier", type: "address" },
+        { name: "firstSeen", type: "uint64" },
+        { name: "lastAttested", type: "uint64" },
+        { name: "trustScore", type: "uint16" },
+        { name: "attestationCount", type: "uint16" },
+        { name: "bgaCertified", type: "bool" },
+        { name: "active", type: "bool" },
       ]
     }],
   },
   {
-    name: "nextAgentId",
+    name: "totalAgents",
     type: "function",
     stateMutability: "view",
     inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    name: "agentIdByOperator",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "operator", type: "address" }],
     outputs: [{ type: "uint256" }],
   },
 ] as const;
@@ -118,18 +124,19 @@ async function fetchAllAgents() {
 
         if (data && data.active) {
           agents.push({
-            agentId: String(i),
-            operator: data.operator,
-            trustScore: Number(data.trustScore),
-            attestationCount: Number(data.attestationCount),
-            proofCount: Number(data.proofCount),
-            bgaCertified: data.bgaCertified,
-            active: data.active,
-            firstSeen: String(data.firstSeen),
-            lastAttested: String(data.lastAttested),
-            teeMrEnclave: data.teeMrEnclave,
-            teeMrSigner: data.teeMrSigner,
-            zkmlCircuitHash: data.zkmlCircuitHash,
+    agentId: String(i),
+    operator: data.teeVerifier,
+    trustScore: Number(data.trustScore),
+    attestationCount: Number(data.attestationCount),
+    proofCount: 0,
+    bgaCertified: data.bgaCertified,
+    active: data.active,
+    firstSeen: String(data.firstSeen),
+    lastAttested: String(data.lastAttested),
+    teeMrEnclave: data.teeMrEnclave,
+    teeMrSigner: data.teeMrSigner,
+    zkmlCircuitHash: data.zkmlCircuitHash,
+});
           });
         }
       } catch {
