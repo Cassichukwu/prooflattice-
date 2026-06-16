@@ -21,6 +21,18 @@ const mantleSepolia = defineChain({
 
 const REGISTRY_ADDRESS = (process.env.REGISTRY_ADDRESS || "0xb2Bd745C436D96b54B4311773AF0a65A5aa694fc") as `0x${string}`;
 
+const AGENT_REGISTERED_EVENT = {
+  name: "AgentRegistered",
+  type: "event",
+  inputs: [
+    { name: "agentId", type: "uint256", indexed: true },
+    { name: "operator", type: "address", indexed: true },
+    { name: "teeMrEnclave", type: "bytes32", indexed: false },
+    { name: "zkmlCircuitHash", type: "bytes32", indexed: false },
+    { name: "teeVerifier", type: "address", indexed: false },
+  ],
+} as const;
+
 const REGISTRY_ABI = [
   {
     name: "getAgent",
@@ -50,16 +62,6 @@ const REGISTRY_ABI = [
     stateMutability: "view",
     inputs: [],
     outputs: [{ type: "uint256" }],
-  },
-  {
-    name: "AgentRegistered",
-    type: "event",
-    inputs: [
-      { name: "agentId", type: "uint256", indexed: true },
-      { name: "operator", type: "address", indexed: true },
-      { name: "agentURI", type: "string", indexed: false },
-      { name: "blockNumber", type: "uint256", indexed: false },
-    ],
   },
 ] as const;
 
@@ -117,22 +119,13 @@ async function fetchAllAgents() {
     try {
       const logs = await client.getLogs({
         address: REGISTRY_ADDRESS,
-        event: {
-          name: "AgentRegistered",
-          type: "event",
-          inputs: [
-            { name: "agentId", type: "uint256", indexed: true },
-            { name: "operator", type: "address", indexed: true },
-            { name: "agentURI", type: "string", indexed: false },
-            { name: "blockNumber", type: "uint256", indexed: false },
-          ],
-        },
+        event: AGENT_REGISTERED_EVENT,
         fromBlock: 0n,
         toBlock: "latest",
       });
       for (const log of logs) {
         const args = log.args as any;
-        if (args.agentId && args.operator) {
+        if (args.agentId !== undefined && args.operator) {
           operatorMap.set(String(args.agentId), args.operator);
         }
       }
