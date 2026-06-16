@@ -81,12 +81,12 @@ const typeDefs = gql`
     active: Boolean!
     firstSeen: BigInt!
     lastAttested: BigInt!
-    teeMrEnclave: String!
-    teeMrSigner: String!
-    zkmlCircuitHash: String!
+    teeMrEnclave: String
+    teeMrSigner: String
+    zkmlCircuitHash: String
     proofCount: Int!
     rank: Int
-  }
+}
 
   type Stats {
     totalAgents: Int!
