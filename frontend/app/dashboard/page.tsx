@@ -50,6 +50,10 @@ export default function DashboardPage() {
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
 
   const handleRegister = () => {
+    if (!registryAddress || registryAddress === "0x0" || registryAddress.length !== 42) {
+      alert("Smart contracts not deployed on this network yet. This feature requires Mantle Sepolia deployment.");
+      return;
+    }
     const mrEnclave = keccak256(toHex(agentName + "-enclave"));
     const mrSigner = keccak256(toHex(agentName + "-signer"));
     const circuitHash = useZkml ? keccak256(toHex(agentName + "-circuit")) : "0x0000000000000000000000000000000000000000000000000000000000000000";
