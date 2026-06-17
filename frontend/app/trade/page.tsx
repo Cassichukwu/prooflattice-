@@ -74,12 +74,7 @@ export default function TradePage() {
   );
 
   const sdk = useMemo(
-    () => (connection ? new ByrealSDK({ 
-  connection,
-  config: {
-    apiBaseUrl: `${window.location.origin}/api/byreal-proxy`,
-  }
-}) : null),
+    () => (connection ? new ByrealSDK({ connection }) : null),
     [connection]
   );
 
