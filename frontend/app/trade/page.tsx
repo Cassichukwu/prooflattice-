@@ -77,7 +77,7 @@ export default function TradePage() {
     () => (connection ? new ByrealSDK({ 
   connection,
   config: {
-    apiBaseUrl: "/api/byreal-proxy",
+    apiBaseUrl: `${window.location.origin}/api/byreal-proxy`,
   }
 }) : null),
     [connection]
