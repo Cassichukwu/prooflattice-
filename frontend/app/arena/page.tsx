@@ -1,7 +1,7 @@
 "use client";
 import { useQuery, gql } from "@apollo/client";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
 import { parseEther, keccak256, toHex } from "viem";
 
@@ -86,14 +86,13 @@ function generateTaskHash(): string {
 
 export default function ArenaPage() {
   const { data, loading, refetch } = useQuery(ROUNDS, { pollInterval: 5000 });
-  const { address, isConnected } = useAccount();
+  const { isConnected } = useAccount();
   const [taskFilter, setTaskFilter] = useState("All");
   const [stateFilter, setStateFilter] = useState("All");
   const [showModal, setShowModal] = useState(false);
   const [selectedRound, setSelectedRound] = useState<any>(null);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
 
-  // Open Round form state
   const [taskAgentId, setTaskAgentId] = useState("1");
   const [taskType, setTaskType] = useState(0);
   const [taskHash, setTaskHash] = useState(generateTaskHash());
@@ -104,7 +103,6 @@ export default function ArenaPage() {
     setTimeout(() => setToast(null), 4000);
   }, []);
 
-  // Write contract hooks
   const { writeContract: openRoundWrite, data: openHash, isPending: openPending } = useWriteContract();
   const { writeContract: judgeWrite, data: judgeHash, isPending: judgePending } = useWriteContract();
   const { writeContract: settleWrite, data: settleHash, isPending: settlePending } = useWriteContract();
@@ -113,21 +111,39 @@ export default function ArenaPage() {
   const { isSuccess: judgeSuccess } = useWaitForTransactionReceipt({ hash: judgeHash });
   const { isSuccess: settleSuccess } = useWaitForTransactionReceipt({ hash: settleHash });
 
-  if (openSuccess) {
-    showToast("Round opened successfully!");
-    setShowModal(false);
-    refetch();
-  }
-  if (judgeSuccess) {
-    showToast("Vote submitted!");
-    setSelectedRound(null);
-    refetch();
-  }
-  if (settleSuccess) {
-    showToast("Round settled!");
-    setSelectedRound(null);
-    refetch();
-  }
+  const prevOpen = useRef(false);
+  const prevJudge = useRef(false);
+  const prevSettle = useRef(false);
+
+  useEffect(() => {
+    if (openSuccess && !prevOpen.current) {
+      prevOpen.current = true;
+      showToast("Round opened successfully!");
+      setShowModal(false);
+      refetch();
+    }
+    if (!openSuccess) prevOpen.current = false;
+  }, [openSuccess, showToast, refetch]);
+
+  useEffect(() => {
+    if (judgeSuccess && !prevJudge.current) {
+      prevJudge.current = true;
+      showToast("Vote submitted!");
+      setSelectedRound(null);
+      refetch();
+    }
+    if (!judgeSuccess) prevJudge.current = false;
+  }, [judgeSuccess, showToast, refetch]);
+
+  useEffect(() => {
+    if (settleSuccess && !prevSettle.current) {
+      prevSettle.current = true;
+      showToast("Round settled!");
+      setSelectedRound(null);
+      refetch();
+    }
+    if (!settleSuccess) prevSettle.current = false;
+  }, [settleSuccess, showToast, refetch]);
 
   const handleOpenRound = () => {
     if (!ARENA_ADDRESS || ARENA_ADDRESS === "0x0") {
@@ -185,14 +201,12 @@ export default function ArenaPage() {
 
   return (
     <div className="space-y-8">
-      {/* Toast */}
       {toast && (
         <div className={`fixed top-6 right-6 z-50 px-6 py-3 rounded-lg shadow-lg font-medium ${toast.type === "success" ? "bg-green-500/90 text-white" : "bg-red-500/90 text-white"}`}>
           {toast.msg}
         </div>
       )}
 
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold gradient-text mb-2">🏛️ Demosthenes Arena</h1>
@@ -206,32 +220,25 @@ export default function ArenaPage() {
             </span>
           )}
           {isConnected && (
-            <button
-              onClick={() => setShowModal(true)}
-              className="btn-primary"
-            >
+            <button onClick={() => setShowModal(true)} className="btn-primary">
               + New Round
             </button>
           )}
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3">
-        <div className="flex gap-2">
-          {STATES.map((s) => (
-            <button
-              key={s}
-              onClick={() => setStateFilter(s)}
-              className={`px-3 py-1 rounded-full text-sm ${stateFilter === s ? "bg-lattice/30 text-lattice border border-lattice/50" : "bg-white/5 text-white/50 hover:bg-white/10"}`}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
+      <div className="flex flex-wrap gap-2">
+        {STATES.map((s) => (
+          <button
+            key={s}
+            onClick={() => setStateFilter(s)}
+            className={`px-3 py-1 rounded-full text-sm ${stateFilter === s ? "bg-lattice/30 text-lattice border border-lattice/50" : "bg-white/5 text-white/50 hover:bg-white/10"}`}
+          >
+            {s}
+          </button>
+        ))}
       </div>
 
-      {/* Rounds */}
       {loading ? (
         <div className="text-white/40 text-center py-12">Loading rounds...</div>
       ) : filtered.length === 0 ? (
@@ -263,9 +270,7 @@ export default function ArenaPage() {
               <div className="flex items-center gap-4 text-sm">
                 <span className="text-green-400">✓ {r.yesVotes} YES</span>
                 <span className="text-red-400">✗ {r.noVotes} NO</span>
-                <span className="text-white/40 ml-auto text-xs">
-                  Judges: {r.judges?.length ?? 0}
-                </span>
+                <span className="text-white/40 ml-auto text-xs">Judges: {r.judges?.length ?? 0}</span>
                 {r.stateName === "Settled" && (
                   <span className={`text-xs ${r.trustDelta >= 0 ? "text-green-400" : "text-red-400"}`}>
                     Trust Δ {r.trustDelta >= 0 ? "+" : ""}{r.trustDelta}
@@ -277,7 +282,6 @@ export default function ArenaPage() {
         </div>
       )}
 
-      {/* Open Round Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/70 z-40 flex items-center justify-center p-4">
           <div className="glass rounded-2xl p-6 w-full max-w-md space-y-4">
@@ -285,72 +289,34 @@ export default function ArenaPage() {
               <h2 className="text-xl font-bold">Open New Round</h2>
               <button onClick={() => setShowModal(false)} className="text-white/40 hover:text-white text-2xl">×</button>
             </div>
-
             <div>
               <label className="text-sm text-white/60 block mb-1">Task Agent ID</label>
-              <input
-                type="number"
-                min="1"
-                value={taskAgentId}
-                onChange={(e) => setTaskAgentId(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm"
-              />
+              <input type="number" min="1" value={taskAgentId} onChange={(e) => setTaskAgentId(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm" />
             </div>
-
             <div>
               <label className="text-sm text-white/60 block mb-1">Task Type</label>
-              <select
-                value={taskType}
-                onChange={(e) => setTaskType(Number(e.target.value))}
-                className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm"
-              >
-                {TASK_TYPE_VALUES.map((t, i) => (
-                  <option key={i} value={i}>{t}</option>
-                ))}
+              <select value={taskType} onChange={(e) => setTaskType(Number(e.target.value))} className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm">
+                {TASK_TYPE_VALUES.map((t, i) => (<option key={i} value={i}>{t}</option>))}
               </select>
             </div>
-
             <div>
               <label className="text-sm text-white/60 block mb-1">Task Hash</label>
               <div className="flex gap-2">
-                <input
-                  value={taskHash}
-                  onChange={(e) => setTaskHash(e.target.value)}
-                  className="flex-1 bg-black/40 border border-white/10 rounded px-3 py-2 text-xs font-mono"
-                />
-                <button
-                  onClick={() => setTaskHash(generateTaskHash())}
-                  className="px-3 py-2 bg-white/10 rounded text-xs hover:bg-white/20"
-                >
-                  Generate
-                </button>
+                <input value={taskHash} onChange={(e) => setTaskHash(e.target.value)} className="flex-1 bg-black/40 border border-white/10 rounded px-3 py-2 text-xs font-mono" />
+                <button onClick={() => setTaskHash(generateTaskHash())} className="px-3 py-2 bg-white/10 rounded text-xs hover:bg-white/20">Generate</button>
               </div>
             </div>
-
             <div>
               <label className="text-sm text-white/60 block mb-1">Stake (MNT)</label>
-              <input
-                type="number"
-                step="0.001"
-                min="0.01"
-                value={stake}
-                onChange={(e) => setStake(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm"
-              />
+              <input type="number" step="0.001" min="0.01" value={stake} onChange={(e) => setStake(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm" />
             </div>
-
-            <button
-              onClick={handleOpenRound}
-              disabled={openPending}
-              className="btn-primary w-full disabled:opacity-50"
-            >
+            <button onClick={handleOpenRound} disabled={openPending} className="btn-primary w-full disabled:opacity-50">
               {openPending ? "Confirm in wallet..." : `Open Round (stake ${stake} MNT)`}
             </button>
           </div>
         </div>
       )}
 
-      {/* Round Detail Modal */}
       {selectedRound && (
         <div className="fixed inset-0 bg-black/70 z-40 flex items-center justify-center p-4">
           <div className="glass rounded-2xl p-6 w-full max-w-lg space-y-4">
@@ -358,13 +324,10 @@ export default function ArenaPage() {
               <h2 className="text-xl font-bold">Round #{selectedRound.roundId}</h2>
               <button onClick={() => setSelectedRound(null)} className="text-white/40 hover:text-white text-2xl">×</button>
             </div>
-
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
                 <div className="text-white/40 text-xs">Status</div>
-                <span className={`px-2 py-0.5 rounded-full text-xs ${STATE_COLORS[selectedRound.stateName]}`}>
-                  {selectedRound.stateName}
-                </span>
+                <span className={`px-2 py-0.5 rounded-full text-xs ${STATE_COLORS[selectedRound.stateName]}`}>{selectedRound.stateName}</span>
               </div>
               <div>
                 <div className="text-white/40 text-xs">Task Type</div>
@@ -372,9 +335,7 @@ export default function ArenaPage() {
               </div>
               <div>
                 <div className="text-white/40 text-xs">Agent</div>
-                <Link href={`/agent/${selectedRound.taskAgentId}`} className="text-lattice hover:underline">
-                  #{selectedRound.taskAgentId}
-                </Link>
+                <Link href={`/agent/${selectedRound.taskAgentId}`} className="text-lattice hover:underline">#{selectedRound.taskAgentId}</Link>
               </div>
               <div>
                 <div className="text-white/40 text-xs">Staker</div>
@@ -389,57 +350,33 @@ export default function ArenaPage() {
                 <div className="text-red-400">{selectedRound.noVotes}</div>
               </div>
             </div>
-
             <div>
               <div className="text-white/40 text-xs mb-1">Task Hash</div>
               <div className="font-mono text-xs text-white/60 break-all">{selectedRound.taskHash}</div>
             </div>
-
             <div>
               <div className="text-white/40 text-xs mb-2">Judges</div>
               <div className="flex flex-wrap gap-2">
                 {selectedRound.judges?.map((j: string, idx: number) => (
-                  <Link key={j} href={`/agent/${j}`} className="text-xs font-mono bg-white/5 px-2 py-1 rounded hover:text-lattice">
-                    #{j}
-                  </Link>
+                  <Link key={idx} href={`/agent/${j}`} className="text-xs font-mono bg-white/5 px-2 py-1 rounded hover:text-lattice">#{j}</Link>
                 ))}
               </div>
             </div>
-
-            {/* Judge buttons */}
             {isConnected && (selectedRound.stateName === "Open" || selectedRound.stateName === "Judging") && (
               <div className="space-y-2">
-                <div className="text-sm text-white/60">Cast your vote as a judge:</div>
+                <div className="text-sm text-white/60">Cast your vote as judge index 0:</div>
                 <div className="flex gap-3">
-                  {selectedRound.judges?.map((judgeId: string, idx: number) => (
-                    <div key={idx} className="flex gap-2">
-                      <button
-                        onClick={() => handleJudge(selectedRound.roundId, idx, true)}
-                        disabled={judgePending}
-                        className="px-4 py-2 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 disabled:opacity-50 text-sm"
-                      >
-                        {judgePending ? "..." : "✓ YES"}
-                      </button>
-                      <button
-                        onClick={() => handleJudge(selectedRound.roundId, idx, false)}
-                        disabled={judgePending}
-                        className="px-4 py-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 disabled:opacity-50 text-sm"
-                      >
-                        {judgePending ? "..." : "✗ NO"}
-                      </button>
-                    </div>
-                  )).slice(0, 1)}
+                  <button onClick={() => handleJudge(selectedRound.roundId, 0, true)} disabled={judgePending} className="flex-1 px-4 py-2 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 disabled:opacity-50 text-sm">
+                    {judgePending ? "..." : "✓ Vote YES"}
+                  </button>
+                  <button onClick={() => handleJudge(selectedRound.roundId, 0, false)} disabled={judgePending} className="flex-1 px-4 py-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 disabled:opacity-50 text-sm">
+                    {judgePending ? "..." : "✗ Vote NO"}
+                  </button>
                 </div>
               </div>
             )}
-
-            {/* Settle button */}
             {isConnected && selectedRound.stateName === "Judging" && (
-              <button
-                onClick={() => handleSettle(selectedRound.roundId)}
-                disabled={settlePending}
-                className="w-full px-4 py-2 bg-yellow-500/20 text-yellow-300 rounded-lg hover:bg-yellow-500/30 disabled:opacity-50 text-sm"
-              >
+              <button onClick={() => handleSettle(selectedRound.roundId)} disabled={settlePending} className="w-full px-4 py-2 bg-yellow-500/20 text-yellow-300 rounded-lg hover:bg-yellow-500/30 disabled:opacity-50 text-sm">
                 {settlePending ? "Settling..." : "⚖️ Settle Round"}
               </button>
             )}
