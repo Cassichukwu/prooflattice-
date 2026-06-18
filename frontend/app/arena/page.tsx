@@ -21,6 +21,16 @@ const ARENA_ABI = [
     outputs: [{ name: "roundId", type: "uint256" }],
   },
   {
+    name: "submitDecision",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "roundId", type: "uint256" },
+      { name: "decision", type: "bytes" },
+    ],
+    outputs: [],
+  },
+  {
     name: "judge",
     type: "function",
     stateMutability: "nonpayable",
@@ -67,7 +77,6 @@ const ROUNDS = gql`
   }
 `;
 
-const TASK_TYPES = ["All", "DeFi Swap", "RWA Rebalance", "LP Rebalance", "Wallet Payment", "Governance Vote", "Yield Optimise"];
 const STATES = ["All", "Open", "Judging", "Settled", "Disputed", "Cancelled"];
 const TASK_TYPE_VALUES = ["DeFi Swap", "RWA Rebalance", "LP Rebalance", "Wallet Payment", "Governance Vote", "Yield Optimise"];
 
@@ -86,8 +95,7 @@ function generateTaskHash(): string {
 
 export default function ArenaPage() {
   const { data, loading, refetch } = useQuery(ROUNDS, { pollInterval: 5000 });
-  const { isConnected } = useAccount();
-  const [taskFilter, setTaskFilter] = useState("All");
+  const { address, isConnected } = useAccount();
   const [stateFilter, setStateFilter] = useState("All");
   const [showModal, setShowModal] = useState(false);
   const [selectedRound, setSelectedRound] = useState<any>(null);
@@ -104,14 +112,17 @@ export default function ArenaPage() {
   }, []);
 
   const { writeContract: openRoundWrite, data: openHash, isPending: openPending } = useWriteContract();
+  const { writeContract: submitWrite, data: submitHash, isPending: submitPending } = useWriteContract();
   const { writeContract: judgeWrite, data: judgeHash, isPending: judgePending } = useWriteContract();
   const { writeContract: settleWrite, data: settleHash, isPending: settlePending } = useWriteContract();
 
   const { isSuccess: openSuccess } = useWaitForTransactionReceipt({ hash: openHash });
+  const { isSuccess: submitSuccess } = useWaitForTransactionReceipt({ hash: submitHash });
   const { isSuccess: judgeSuccess } = useWaitForTransactionReceipt({ hash: judgeHash });
   const { isSuccess: settleSuccess } = useWaitForTransactionReceipt({ hash: settleHash });
 
   const prevOpen = useRef(false);
+  const prevSubmit = useRef(false);
   const prevJudge = useRef(false);
   const prevSettle = useRef(false);
 
@@ -124,6 +135,16 @@ export default function ArenaPage() {
     }
     if (!openSuccess) prevOpen.current = false;
   }, [openSuccess, showToast, refetch]);
+
+  useEffect(() => {
+    if (submitSuccess && !prevSubmit.current) {
+      prevSubmit.current = true;
+      showToast("Decision submitted! Round is now in Judging state.");
+      setSelectedRound(null);
+      refetch();
+    }
+    if (!submitSuccess) prevSubmit.current = false;
+  }, [submitSuccess, showToast, refetch]);
 
   useEffect(() => {
     if (judgeSuccess && !prevJudge.current) {
@@ -146,10 +167,6 @@ export default function ArenaPage() {
   }, [settleSuccess, showToast, refetch]);
 
   const handleOpenRound = () => {
-    if (!ARENA_ADDRESS || ARENA_ADDRESS === "0x0") {
-      showToast("Contract not deployed yet", "error");
-      return;
-    }
     try {
       const stakeWei = parseEther(stake);
       openRoundWrite({
@@ -161,6 +178,19 @@ export default function ArenaPage() {
       });
     } catch (e) {
       showToast("Transaction failed: " + String(e), "error");
+    }
+  };
+
+  const handleSubmitDecision = (roundId: string) => {
+    try {
+      submitWrite({
+        address: ARENA_ADDRESS,
+        abi: ARENA_ABI,
+        functionName: "submitDecision",
+        args: [BigInt(roundId), toHex("decision-submitted") as `0x${string}`],
+      });
+    } catch (e) {
+      showToast("Submit failed: " + String(e), "error");
     }
   };
 
@@ -192,12 +222,7 @@ export default function ArenaPage() {
 
   const rounds = data?.rounds ?? [];
   const liveRounds = data?.liveRounds ?? [];
-
-  const filtered = rounds.filter((r: any) => {
-    if (taskFilter !== "All" && r.taskTypeName !== taskFilter) return false;
-    if (stateFilter !== "All" && r.stateName !== stateFilter) return false;
-    return true;
-  });
+  const filtered = rounds.filter((r: any) => stateFilter === "All" || r.stateName === stateFilter);
 
   return (
     <div className="space-y-8">
@@ -220,20 +245,15 @@ export default function ArenaPage() {
             </span>
           )}
           {isConnected && (
-            <button onClick={() => setShowModal(true)} className="btn-primary">
-              + New Round
-            </button>
+            <button onClick={() => setShowModal(true)} className="btn-primary">+ New Round</button>
           )}
         </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
         {STATES.map((s) => (
-          <button
-            key={s}
-            onClick={() => setStateFilter(s)}
-            className={`px-3 py-1 rounded-full text-sm ${stateFilter === s ? "bg-lattice/30 text-lattice border border-lattice/50" : "bg-white/5 text-white/50 hover:bg-white/10"}`}
-          >
+          <button key={s} onClick={() => setStateFilter(s)}
+            className={`px-3 py-1 rounded-full text-sm ${stateFilter === s ? "bg-lattice/30 text-lattice border border-lattice/50" : "bg-white/5 text-white/50 hover:bg-white/10"}`}>
             {s}
           </button>
         ))}
@@ -249,22 +269,17 @@ export default function ArenaPage() {
       ) : (
         <div className="space-y-4">
           {filtered.map((r: any) => (
-            <div
-              key={r.roundId}
-              className="glass p-5 cursor-pointer hover:border-lattice/30 border border-white/5 rounded-xl transition-all"
-              onClick={() => setSelectedRound(r)}
-            >
+            <div key={r.roundId} onClick={() => setSelectedRound(r)}
+              className="glass p-5 cursor-pointer hover:border-lattice/30 border border-white/5 rounded-xl transition-all">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <span className="text-white/40 text-sm font-mono">#{r.roundId}</span>
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${STATE_COLORS[r.stateName] || "bg-white/10 text-white/40"}`}>
-                    {r.stateName}
-                  </span>
+                  <span className={`px-2 py-0.5 rounded-full text-xs ${STATE_COLORS[r.stateName] || "bg-white/10 text-white/40"}`}>{r.stateName}</span>
                   <span className="text-sm text-white/60">{r.taskTypeName}</span>
                 </div>
                 <div className="text-right">
                   <div className="text-sm text-white/80">Agent #{r.taskAgentId}</div>
-                  <div className="text-xs text-white/40">{r.stakeRequired} stake</div>
+                  <div className="text-xs text-white/40">{r.stakeRequired}</div>
                 </div>
               </div>
               <div className="flex items-center gap-4 text-sm">
@@ -282,6 +297,7 @@ export default function ArenaPage() {
         </div>
       )}
 
+      {/* Open Round Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/70 z-40 flex items-center justify-center p-4">
           <div className="glass rounded-2xl p-6 w-full max-w-md space-y-4">
@@ -317,9 +333,10 @@ export default function ArenaPage() {
         </div>
       )}
 
+      {/* Round Detail Modal */}
       {selectedRound && (
         <div className="fixed inset-0 bg-black/70 z-40 flex items-center justify-center p-4">
-          <div className="glass rounded-2xl p-6 w-full max-w-lg space-y-4">
+          <div className="glass rounded-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">Round #{selectedRound.roundId}</h2>
               <button onClick={() => setSelectedRound(null)} className="text-white/40 hover:text-white text-2xl">×</button>
@@ -349,34 +366,59 @@ export default function ArenaPage() {
                 <div className="text-white/40 text-xs">NO Votes</div>
                 <div className="text-red-400">{selectedRound.noVotes}</div>
               </div>
+              <div>
+                <div className="text-white/40 text-xs">Stake</div>
+                <div>{selectedRound.stakeRequired}</div>
+              </div>
             </div>
             <div>
               <div className="text-white/40 text-xs mb-1">Task Hash</div>
               <div className="font-mono text-xs text-white/60 break-all">{selectedRound.taskHash}</div>
             </div>
             <div>
-              <div className="text-white/40 text-xs mb-2">Judges</div>
+              <div className="text-white/40 text-xs mb-2">Judges ({selectedRound.judges?.length ?? 0})</div>
               <div className="flex flex-wrap gap-2">
                 {selectedRound.judges?.map((j: string, idx: number) => (
                   <Link key={idx} href={`/agent/${j}`} className="text-xs font-mono bg-white/5 px-2 py-1 rounded hover:text-lattice">#{j}</Link>
                 ))}
+                {(!selectedRound.judges || selectedRound.judges.length === 0) && (
+                  <span className="text-xs text-white/40">No judges assigned yet</span>
+                )}
               </div>
             </div>
-            {isConnected && (selectedRound.stateName === "Open" || selectedRound.stateName === "Judging") && (
+
+            {/* Submit Decision - only task agent can do this */}
+            {isConnected && selectedRound.stateName === "Open" && (
               <div className="space-y-2">
-                <div className="text-sm text-white/60">Cast your vote as judge index 0:</div>
+                <div className="text-xs text-white/40">Only the task agent operator can submit a decision to move round to Judging state.</div>
+                <button onClick={() => handleSubmitDecision(selectedRound.roundId)} disabled={submitPending}
+                  className="w-full px-4 py-2 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30 disabled:opacity-50 text-sm">
+                  {submitPending ? "Submitting..." : "📋 Submit Decision (move to Judging)"}
+                </button>
+              </div>
+            )}
+
+            {/* Judge buttons */}
+            {isConnected && selectedRound.stateName === "Judging" && (
+              <div className="space-y-2">
+                <div className="text-sm text-white/60">Cast your vote as an assigned judge:</div>
                 <div className="flex gap-3">
-                  <button onClick={() => handleJudge(selectedRound.roundId, 0, true)} disabled={judgePending} className="flex-1 px-4 py-2 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 disabled:opacity-50 text-sm">
+                  <button onClick={() => handleJudge(selectedRound.roundId, 0, true)} disabled={judgePending}
+                    className="flex-1 px-4 py-2 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 disabled:opacity-50 text-sm">
                     {judgePending ? "..." : "✓ Vote YES"}
                   </button>
-                  <button onClick={() => handleJudge(selectedRound.roundId, 0, false)} disabled={judgePending} className="flex-1 px-4 py-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 disabled:opacity-50 text-sm">
+                  <button onClick={() => handleJudge(selectedRound.roundId, 0, false)} disabled={judgePending}
+                    className="flex-1 px-4 py-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 disabled:opacity-50 text-sm">
                     {judgePending ? "..." : "✗ Vote NO"}
                   </button>
                 </div>
               </div>
             )}
+
+            {/* Settle button */}
             {isConnected && selectedRound.stateName === "Judging" && (
-              <button onClick={() => handleSettle(selectedRound.roundId)} disabled={settlePending} className="w-full px-4 py-2 bg-yellow-500/20 text-yellow-300 rounded-lg hover:bg-yellow-500/30 disabled:opacity-50 text-sm">
+              <button onClick={() => handleSettle(selectedRound.roundId)} disabled={settlePending}
+                className="w-full px-4 py-2 bg-yellow-500/20 text-yellow-300 rounded-lg hover:bg-yellow-500/30 disabled:opacity-50 text-sm">
                 {settlePending ? "Settling..." : "⚖️ Settle Round"}
               </button>
             )}
