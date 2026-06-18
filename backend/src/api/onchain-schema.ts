@@ -294,7 +294,7 @@ async function fetchAllRounds() {
           taskAgentId: String(data.taskAgentId),
           taskTypeName: TASK_TYPE_NAMES[Number(data.taskType)] || "Unknown",
           taskHash: data.taskHash,
-          stakeRequired: data.stakeRequired.toString(),
+          stakeRequired: (Number(data.stakeRequired) / 1e18).toFixed(4) + " MNT",
           yesVotes: Number(data.yesVotes),
           noVotes: Number(data.noVotes),
           stateName: ROUND_STATE_NAMES[Number(data.state)] || "Unknown",
