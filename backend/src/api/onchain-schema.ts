@@ -3,7 +3,7 @@ import cors from "cors";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import { gql } from "graphql-tag";
-import { createPublicClient, http } from "viem";
+import { createPublicClient, http, formatEther } from "viem";
 import { defineChain } from "viem";
 
 const mantleSepolia = defineChain({
@@ -126,6 +126,13 @@ const client = createPublicClient({
   transport: http(),
 });
 
+// Simple in-memory cache
+let agentCache: any[] = [];
+let roundCache: any[] = [];
+let lastAgentFetch = 0;
+let lastRoundFetch = 0;
+const CACHE_TTL = 10000; // 10 seconds
+
 const typeDefs = gql`
   scalar BigInt
 
@@ -158,6 +165,7 @@ const typeDefs = gql`
     judges: [ID!]!
     staker: String!
     settlementBlock: BigInt!
+    submissionDeadline: BigInt!
   }
 
   type Stats {
@@ -176,7 +184,31 @@ const typeDefs = gql`
   }
 `;
 
+async function fetchLogsInChunks(event: any, address: `0x${string}`) {
+  const latestBlock = await client.getBlockNumber();
+  const chunkSize = 9000n;
+  let fromBlock = DEPLOYMENT_BLOCK;
+  const allLogs: any[] = [];
+
+  while (fromBlock <= latestBlock) {
+    const toBlock = fromBlock + chunkSize > latestBlock ? latestBlock : fromBlock + chunkSize;
+    try {
+      const logs = await client.getLogs({ address, event, fromBlock, toBlock });
+      allLogs.push(...logs);
+    } catch (e) {
+      console.error(`[warn] Failed chunk ${fromBlock}-${toBlock}`);
+    }
+    fromBlock = toBlock + 1n;
+  }
+  return allLogs;
+}
+
 async function fetchAllAgents() {
+  const now = Date.now();
+  if (agentCache.length > 0 && now - lastAgentFetch < CACHE_TTL) {
+    return agentCache;
+  }
+
   try {
     const total = await client.readContract({
       address: REGISTRY_ADDRESS,
@@ -185,35 +217,17 @@ async function fetchAllAgents() {
     });
 
     const agentCount = Number(total);
-    console.log(`[*] Fetching ${agentCount} agents from chain...`);
+    console.log(`[*] Fetching ${agentCount} agents...`);
 
     const operatorMap = new Map<string, string>();
     try {
-      const latestBlock = await client.getBlockNumber();
-      const chunkSize = 9000n;
-      let fromBlock = DEPLOYMENT_BLOCK;
-
-      while (fromBlock <= latestBlock) {
-        const toBlock = fromBlock + chunkSize > latestBlock ? latestBlock : fromBlock + chunkSize;
-        try {
-          const logs = await client.getLogs({
-            address: REGISTRY_ADDRESS,
-            event: AGENT_REGISTERED_EVENT,
-            fromBlock,
-            toBlock,
-          });
-          for (const log of logs) {
-            const args = log.args as any;
-            if (args.agentId !== undefined && args.operator) {
-              operatorMap.set(String(args.agentId), args.operator);
-            }
-          }
-        } catch (e) {
-          console.error(`[warn] Failed chunk ${fromBlock}-${toBlock}:`, e);
+      const logs = await fetchLogsInChunks(AGENT_REGISTERED_EVENT, REGISTRY_ADDRESS);
+      for (const log of logs) {
+        const args = log.args as any;
+        if (args.agentId !== undefined && args.operator) {
+          operatorMap.set(String(args.agentId), args.operator);
         }
-        fromBlock = toBlock + 1n;
       }
-      console.log(`[*] Found ${operatorMap.size} operator addresses`);
     } catch (e) {
       console.error("[warn] Failed to fetch AgentRegistered events:", e);
     }
@@ -245,22 +259,25 @@ async function fetchAllAgents() {
           });
         }
       } catch (e) {
-        console.error(`[warn] Failed to fetch agent ${i}:`, e);
         continue;
       }
     }
 
-    return agents.sort((a, b) => b.trustScore - a.trustScore).map((a, i) => ({
-      ...a,
-      rank: i + 1,
-    }));
+    agentCache = agents.sort((a, b) => b.trustScore - a.trustScore).map((a, i) => ({ ...a, rank: i + 1 }));
+    lastAgentFetch = now;
+    return agentCache;
   } catch (err) {
     console.error("Failed to fetch agents:", err);
-    return [];
+    return agentCache;
   }
 }
 
 async function fetchAllRounds() {
+  const now = Date.now();
+  if (roundCache.length > 0 && now - lastRoundFetch < CACHE_TTL) {
+    return roundCache;
+  }
+
   try {
     const total = await client.readContract({
       address: ARENA_ADDRESS,
@@ -269,7 +286,22 @@ async function fetchAllRounds() {
     });
 
     const roundCount = Number(total);
-    console.log(`[*] Fetching ${roundCount} rounds from chain...`);
+    console.log(`[*] Fetching ${roundCount} rounds...`);
+
+    // Get staker addresses from RoundOpened events
+    const stakerMap = new Map<string, string>();
+    try {
+      const logs = await fetchLogsInChunks(ROUND_OPENED_EVENT, ARENA_ADDRESS);
+      for (const log of logs) {
+        const args = log.args as any;
+        if (args.roundId !== undefined) {
+          // staker is the transaction sender
+          stakerMap.set(String(args.roundId), (log as any).transactionFrom || "0x");
+        }
+      }
+    } catch (e) {
+      console.error("[warn] Failed to fetch RoundOpened events:", e);
+    }
 
     const rounds = [];
     for (let i = 1; i <= roundCount; i++) {
@@ -294,7 +326,7 @@ async function fetchAllRounds() {
           taskAgentId: String(data.taskAgentId),
           taskTypeName: TASK_TYPE_NAMES[Number(data.taskType)] || "Unknown",
           taskHash: data.taskHash,
-          stakeRequired: (Number(data.stakeRequired) / 1e18).toFixed(4) + " MNT",
+          stakeRequired: parseFloat(formatEther(data.stakeRequired)).toFixed(4) + " MNT",
           yesVotes: Number(data.yesVotes),
           noVotes: Number(data.noVotes),
           stateName: ROUND_STATE_NAMES[Number(data.state)] || "Unknown",
@@ -302,6 +334,7 @@ async function fetchAllRounds() {
           judges: judges.map((j: bigint) => String(j)),
           staker: data.staker,
           settlementBlock: String(data.judgmentDeadline),
+          submissionDeadline: String(data.submissionDeadline),
         });
       } catch (e) {
         console.error(`[warn] Failed to fetch round ${i}:`, e);
@@ -309,10 +342,12 @@ async function fetchAllRounds() {
       }
     }
 
-    return rounds;
+    roundCache = rounds;
+    lastRoundFetch = now;
+    return roundCache;
   } catch (err) {
     console.error("Failed to fetch rounds:", err);
-    return [];
+    return roundCache;
   }
 }
 
@@ -338,6 +373,8 @@ const resolvers = {
       };
     },
     rounds: async () => {
+      // Force fresh fetch every time
+      lastRoundFetch = 0;
       return fetchAllRounds();
     },
     liveRounds: async () => {
