@@ -10,6 +10,16 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/graphq
 const apolloClient = new ApolloClient({
   link: new HttpLink({ uri: API_URL }),
   cache: new InMemoryCache(),
+  defaultOptions: {
+    watchQuery: {
+      fetchPolicy: "no-cache",
+      errorPolicy: "all",
+    },
+    query: {
+      fetchPolicy: "no-cache",
+      errorPolicy: "all",
+    },
+  },
 });
 
 const mantleSepolia = defineChain({
