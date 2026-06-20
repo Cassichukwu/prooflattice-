@@ -131,7 +131,7 @@ let agentCache: any[] = [];
 let roundCache: any[] = [];
 let lastAgentFetch = 0;
 let lastRoundFetch = 0;
-const CACHE_TTL = 10000; // 10 seconds
+const CACHE_TTL = 0; // no cache - always fresh
 
 const typeDefs = gql`
   scalar BigInt
